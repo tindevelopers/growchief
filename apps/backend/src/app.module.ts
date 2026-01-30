@@ -9,15 +9,21 @@ import { PublicApiModule } from '@growchief/backend/public-api-controllers/publi
 import { TemporalRegisterMissingSearchAttributesModule } from '@growchief/shared-backend/temporal/temporal.register';
 import { TemporalClientSubscriptionRegisterModule } from '@growchief/shared-backend/temporal/temporal.client.subscription.register';
 
+const temporalModules = process.env.TEMPORAL_ADDRESS
+  ? [
+      getTemporalModule(false),
+      TemporalRegisterMissingSearchAttributesModule,
+      TemporalClientSubscriptionRegisterModule,
+    ]
+  : [];
+
 @Global()
 @Module({
   imports: [
     SharedServerModule,
     ControllersModule,
     PublicApiModule,
-    getTemporalModule(false),
-    TemporalRegisterMissingSearchAttributesModule,
-    TemporalClientSubscriptionRegisterModule,
+    ...temporalModules,
   ],
   controllers: [],
   providers: [AuthService, AuthMiddleware, BotsSockets],

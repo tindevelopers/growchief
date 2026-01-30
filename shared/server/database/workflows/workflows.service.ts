@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { WorkflowsRepository } from '@growchief/shared-backend/database/workflows/workflows.repository';
 import { UpdateWorkflow } from '@growchief/shared-both/dto/platforms/update.workflow.dto';
 import { TemporalService } from 'nestjs-temporal-core';
@@ -22,7 +22,7 @@ import { LeadsService } from '@growchief/shared-backend/database/leads/leads.ser
 export class WorkflowsService {
   constructor(
     private _workflowsRepository: WorkflowsRepository,
-    private _temporal: TemporalService,
+    @Optional() private _temporal?: TemporalService,
     private _botsService: BotsService,
     private _urlService: URLService,
     private _leadsService: LeadsService,
@@ -315,12 +315,14 @@ export class WorkflowsService {
       await this._workflowsRepository.deleteWorkflow(id, organizationId);
     }
 
-    try {
-      await (
-        await this._temporal.getClient().getWorkflowHandle('enrichment')
-      ).signal('removeNodesFromQueueByWorkflowIdSignal', id);
-    } catch (error) {
-      console.log(`Failed to remove jobs from queue`, error.message);
+    if (this._temporal) {
+      try {
+        await (
+          await this._temporal.getClient().getWorkflowHandle('enrichment')
+        ).signal('removeNodesFromQueueByWorkflowIdSignal', id);
+      } catch (error) {
+        console.log(`Failed to remove jobs from queue`, error.message);
+      }
     }
 
     if (botIds.length) {

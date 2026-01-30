@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { EmailInterface } from '@growchief/shared-backend/email/email.interface';
 import { EmptyProvider } from '@growchief/shared-backend/email/empty.provider';
 import { ResendProvider } from '@growchief/shared-backend/email/resend.provider';
@@ -8,7 +8,7 @@ import { TemporalService } from 'nestjs-temporal-core';
 @Injectable()
 export class EmailService {
   emailService: EmailInterface;
-  constructor(private _temporalService: TemporalService) {
+  constructor(@Optional() private _temporalService?: TemporalService) {
     this.emailService = this.selectProvider(process.env.EMAIL_PROVIDER!);
     console.log('Email service provider:', this.emailService.name);
     for (const key of this.emailService.validateEnvKeys) {
@@ -50,9 +50,14 @@ export class EmailService {
       return;
     }
 
-    await this._temporalService.signalWorkflow('send-emails', 'email', [
-      { to, subject, html, replyTo, buffer },
-    ]);
+    if (this._temporalService) {
+      await this._temporalService.signalWorkflow('send-emails', 'email', [
+        { to, subject, html, replyTo, buffer },
+      ]);
+    } else {
+      // Fallback to sync email if Temporal is not available
+      await this.sendEmailSync(to, subject, html, replyTo, buffer);
+    }
   }
 
   async sendEmailSync(
