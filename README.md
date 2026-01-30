@@ -91,6 +91,56 @@ We do not encourage spam (perfect for API/n8n automations).
 
 View https://docs.growchief.com
 
+## Deploy to Railway
+
+1. Go to [railway.app](https://railway.app) and create a project
+2. Connect your GitHub repo (or use `railway link` + `railway up`)
+3. Add a **PostgreSQL** service (or use Neon – add `DATABASE_URL` and `DIRECT_URL`)
+4. Add env vars in the Railway dashboard:
+   - `DATABASE_URL`, `DIRECT_URL` (Neon or Railway Postgres)
+   - `AUTH_SECRET`
+   - `FRONTEND_URL` (your Railway URL, e.g. `https://growchief-production.up.railway.app`)
+   - `TEMPORAL_ADDRESS` (Temporal Cloud or self-hosted)
+5. Deploy – Railway builds from `Dockerfile.dev` via `railway.toml`
+
+Railway sets `PORT` automatically. The app listens on it.
+
+---
+
+## Deploy to Google Cloud Run
+
+### Option 1: Cloud Build (CI/CD)
+
+```bash
+gcloud builds submit --config cloudbuild.yaml
+```
+
+This builds the image, pushes to Artifact Registry, and deploys to Cloud Run. **Note:** The first deploy creates the service with minimal env vars. Add `DATABASE_URL`, `AUTH_SECRET`, etc. via the Cloud Run console or Option 2.
+
+### Option 2: Deploy script (with env vars)
+
+1. Ensure `.env` has production values:
+   - `DATABASE_URL` (e.g. Neon)
+   - `AUTH_SECRET`
+   - `FRONTEND_URL` (your Cloud Run URL after first deploy)
+   - `TEMPORAL_ADDRESS` (if using Temporal Cloud)
+
+2. Build and deploy:
+   ```bash
+   pnpm run deploy:cloud-run:build
+   ```
+
+3. Or deploy existing image only:
+   ```bash
+   pnpm run deploy:cloud-run
+   ```
+
+### Temporal on Cloud Run
+
+The orchestrator (Temporal worker) runs in the same container. For production workflows, consider:
+- **Temporal Cloud** – set `TEMPORAL_ADDRESS` to your Temporal Cloud endpoint
+- **Min instances** – set `--min-instances 1` to keep the worker connected (avoids cold starts)
+
 ## Sponsorship
 
 This can be very valuable for Proxies / Lead enrichment companies, feel free to check our sponsorship page.

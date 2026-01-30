@@ -1,0 +1,12 @@
+# Railway deployment config
+# Deploy: Connect GitHub repo at railway.app or use `railway up`
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.dev"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

@@ -56,6 +56,9 @@ Thumbs.db
 
 # ignore Secrets folder
 .secrets/
+
+# Neon pg_dump outputs (may contain data)
+var/*.sql
 libraries/plugins/src/plugins.ts
 i18n.cache
 .vite
