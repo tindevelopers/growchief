@@ -6,12 +6,18 @@ services:
     image: ghcr.io/growchief/growchief:latest
     container_name: growchief
     restart: always
+    command: >
+      bash -lc "nginx &&
+      (pm2 delete all || true) &&
+      pnpm dlx prisma@6.13.0 db push --schema ./schema.prisma &&
+      pnpm run --parallel pm2 &&
+      pm2 logs"
     environment:
       DATABASE_URL: "postgresql://growchief-user:growchief-password@growchief-postgres:5432/growchief-db-local"
       STORAGE_PROVIDER: "local"
       UPLOAD_DIRECTORY: "/uploads"
       NEXT_PUBLIC_UPLOAD_DIRECTORY: "/uploads"
-      AUTH_SECRET: "YourSpecialString!@#111"
+      AUTH_SECRET: "F1U3Qx0qS3m4p5C6t7y8u9i0oPZr5nX2"
       GOOGLE_CLIENT_ID: "For Login With Google Client ID"
       GOOGLE_CLIENT_SECRET: "For Login With Google Client Secret"
       TEMPORAL_ADDRESS: "temporal:7233"
