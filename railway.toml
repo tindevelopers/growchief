@@ -1,8 +1,9 @@
 [build]
-builder = "dockerfile"
+builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile.dev"
 
 [deploy]
 healthcheckPath = "/"
 healthcheckTimeout = 300
-startCommand = "nginx && (pm2 delete all || true) && pnpm run prisma-db-push && pnpm run --parallel pm2 && pm2 logs"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

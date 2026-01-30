@@ -17,7 +17,7 @@ export const getTemporalModule = (
       providers: [nullTemporalServiceProvider],
       exports: [TemporalService],
       global: true,
-    })
+    } as object)
     class NullTemporalModule {}
     return NullTemporalModule;
   }

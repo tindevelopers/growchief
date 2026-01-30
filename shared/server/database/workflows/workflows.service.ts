@@ -22,10 +22,10 @@ import { LeadsService } from '@growchief/shared-backend/database/leads/leads.ser
 export class WorkflowsService {
   constructor(
     private _workflowsRepository: WorkflowsRepository,
-    @Optional() private _temporal?: TemporalService,
     private _botsService: BotsService,
     private _urlService: URLService,
     private _leadsService: LeadsService,
+    @Optional() private _temporal?: TemporalService,
   ) {}
 
   static mapNodes(
@@ -69,6 +69,7 @@ export class WorkflowsService {
   }
 
   async totalRunningWorkflows(workflowId: string, organizationId: string) {
+    if (!this._temporal) return { total: 0 };
     let total = 0;
     const workflows = this._temporal
       .getClient()
@@ -118,7 +119,7 @@ export class WorkflowsService {
           p.match(account.platform.urlRegex),
         );
 
-        if (filterUrls.length) {
+        if (filterUrls.length && this._temporal) {
           await this._temporal
             .getClient()
             .getRawClient()
@@ -158,10 +159,11 @@ export class WorkflowsService {
         continue;
       }
 
-      await this._temporal
-        .getClient()
-        .getRawClient()
-        ?.workflow.start('workflowUploadLeads', {
+      if (this._temporal) {
+        await this._temporal
+          .getClient()
+          .getRawClient()
+          ?.workflow.start('workflowUploadLeads', {
           args: [
             { workflowId: wid, orgId, botId: account.bot.id, url: matchUrl },
           ],
@@ -185,6 +187,7 @@ export class WorkflowsService {
             maximumAttempts: 1,
           },
         });
+      }
     }
   }
 
@@ -275,27 +278,29 @@ export class WorkflowsService {
       data,
     );
 
-    try {
-      for (const bot of botIds) {
-        const workflows = this._temporal
-          .getClient()
-          .listWorkflows(
-            `botId="${bot}" AND WorkflowType="userWorkflowThrottler" AND ExecutionStatus="Running"`,
-          );
+    if (this._temporal) {
+      try {
+        for (const bot of botIds) {
+          const workflows = this._temporal
+            .getClient()
+            .listWorkflows(
+              `botId="${bot}" AND WorkflowType="userWorkflowThrottler" AND ExecutionStatus="Running"`,
+            );
 
-        for await (const workflow of workflows) {
-          for (const del of list.toDelete) {
-            try {
-              await (
-                await this._temporal
-                  .getClient()
-                  .getWorkflowHandle(workflow.workflowId)
-              ).signal('removeNodesFromQueueByNodeIdSignal', del.id);
-            } catch (err) {}
+          for await (const workflow of workflows) {
+            for (const del of list.toDelete) {
+              try {
+                await (
+                  await this._temporal
+                    .getClient()
+                    .getWorkflowHandle(workflow.workflowId)
+                ).signal('removeNodesFromQueueByNodeIdSignal', del.id);
+              } catch (err) {}
+            }
           }
         }
-      }
-    } catch (err) {}
+      } catch (err) {}
+    }
 
     return list;
   }
@@ -325,7 +330,7 @@ export class WorkflowsService {
       }
     }
 
-    if (botIds.length) {
+    if (this._temporal && botIds.length) {
       for (const bot of botIds) {
         try {
           const workflows = this._temporal
@@ -344,7 +349,7 @@ export class WorkflowsService {
             } catch (error) {
               console.log(
                 `Failed to terminate workflow ${workflow.workflowId}:`,
-                error.message,
+                (error as Error).message,
               );
             }
           }
@@ -352,25 +357,27 @@ export class WorkflowsService {
       }
     }
 
-    try {
-      const workflows = this._temporal
-        .getClient()
-        .listWorkflows(`workflowId="${id}" AND ExecutionStatus="Running"`);
-      for await (const workflow of workflows) {
-        try {
-          await (
-            await this._temporal
-              .getClient()
-              .getWorkflowHandle(workflow.workflowId)
-          ).terminate('Workflow deleted');
-        } catch (error) {
-          console.log(
-            `Failed to terminate workflow ${workflow.workflowId}:`,
-            error.message,
-          );
+    if (this._temporal) {
+      try {
+        const workflows = this._temporal
+          .getClient()
+          .listWorkflows(`workflowId="${id}" AND ExecutionStatus="Running"`);
+        for await (const workflow of workflows) {
+          try {
+            await (
+              await this._temporal
+                .getClient()
+                .getWorkflowHandle(workflow.workflowId)
+            ).terminate('Workflow deleted');
+          } catch (error) {
+            console.log(
+              `Failed to terminate workflow ${workflow.workflowId}:`,
+              (error as Error).message,
+            );
+          }
         }
-      }
-    } catch (err) {}
+      } catch (err) {}
+    }
 
     return { deleted: true };
   }
@@ -413,6 +420,7 @@ export class WorkflowsService {
     workflowId: string,
     body: EnrichmentDto,
   ) {
+    if (!this._temporal) return;
     await this._temporal
       .getClient()
       .getRawClient()
