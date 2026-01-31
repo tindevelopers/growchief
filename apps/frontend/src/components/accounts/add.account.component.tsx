@@ -1,6 +1,9 @@
 import { useGroupContext } from "@growchief/frontend/context/group.context.tsx";
 import { usePlatforms } from "@growchief/frontend/requests/platform.request.ts";
-import { useProxiesRequest } from "@growchief/frontend/requests/proxies.request.ts";
+import {
+  useProxiesRequest,
+  type Proxy,
+} from "@growchief/frontend/requests/proxies.request.ts";
 import type { FC } from "react";
 import { useCallback, useState } from "react";
 import { useModals } from "@growchief/frontend/utils/store.ts";
@@ -100,10 +103,22 @@ const ProxySelectionStep: FC<{
       component: (close) => (
         <AddProxyComponent
           close={close}
-          mutate={(newProxyId?: string) => {
-            mutate(); // Refresh the proxies list
-            if (newProxyId) {
-              setSelectedProxyId(newProxyId); // Auto-select the new proxy
+          mutate={(newProxyOrId?: Proxy | string) => {
+            // Optimistically add new proxy to cache so it appears immediately
+            if (newProxyOrId && typeof newProxyOrId === "object") {
+              mutate(
+                (prev) => [
+                  ...(prev || []),
+                  { ...newProxyOrId, botsCount: newProxyOrId.botsCount ?? 0 },
+                ],
+                true,
+              );
+              setSelectedProxyId(newProxyOrId.id);
+            } else if (typeof newProxyOrId === "string") {
+              mutate(); // Refetch when only id is passed
+              setSelectedProxyId(newProxyOrId);
+            } else {
+              mutate();
             }
           }}
         />

@@ -9,7 +9,7 @@ export interface Proxy {
   country: string;
   createdAt: string;
   updatedAt: string;
-  botsCount: number;
+  botsCount?: number;
 }
 
 export const useProxiesRequest = () => {
@@ -32,16 +32,23 @@ export const useProxiesRequest = () => {
 
   const createProxy = useCallback(
     async (identifier: string, country: string) => {
-      return (
-        await fetch(`/proxies/${identifier}`, {
-          method: "POST",
-          body: JSON.stringify({
-            country,
-          }),
-        })
-      ).json();
+      const res = await fetch(`/proxies/${identifier}`, {
+        method: "POST",
+        body: JSON.stringify({
+          country,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const err = new Error(
+          (data?.message as string) || `Failed to create proxy (${res.status})`,
+        ) as Error & { response: Response };
+        err.response = res;
+        throw err;
+      }
+      return data;
     },
-    [],
+    [fetch],
   );
 
   const createCustomProxy = useCallback(

@@ -23,29 +23,43 @@ type BrightDataClient = {
   ) => Promise<{ data: T }>;
 };
 
+async function brightDataFetch<T>(
+  method: string,
+  input: string,
+  body?: unknown,
+): Promise<{ data: T }> {
+  const res = await fetch(`https://api.brightdata.com${input}`, {
+    method,
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.BRIGHTDATA_API_KEY}`,
+    },
+  });
+
+  if (res.status === 204) return undefined as { data: T };
+
+  const text = await res.text();
+  if (!res.ok) {
+    const msg =
+      text && text.length < 200 ? text : `Bright Data API error: ${res.status}`;
+    throw new Error(msg);
+  }
+
+  if (!text || text.trim() === '') return undefined as { data: T };
+  try {
+    return { data: JSON.parse(text) as T };
+  } catch {
+    throw new Error(text || `Bright Data API returned invalid response`);
+  }
+}
+
 export const brightData: BrightDataClient = new Proxy({} as BrightDataClient, {
   get(_target, prop: string | symbol) {
     if (typeof prop !== 'string') return undefined;
-
     const method = prop.toUpperCase();
-    return async <T = unknown>(
-      input: string,
-      body?: unknown,
-    ): Promise<{ data: T }> => {
-      const res = await fetch(`https://api.brightdata.com${input}`, {
-        method,
-        ...(body ? { body: JSON.stringify(body) } : {}),
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.BRIGHTDATA_API_KEY}`,
-        },
-      });
-
-      // safer: handle 204 / non-JSON responses
-      // @ts-ignore
-      if (res.status === 204) return undefined as { data: T };
-      return { data: await res.json() } as { data: T };
-    };
+    return (input: string, body?: unknown) =>
+      brightDataFetch(method, input, body);
   },
 });
 

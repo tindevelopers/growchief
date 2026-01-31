@@ -95,9 +95,9 @@ const ProxyRow: FC<{
       </td>
       <td className="px-[20px] py-[16px]">
         <div className="flex items-center gap-[8px]">
-          <StatusBadge isActive={proxy.botsCount > 0} />
+          <StatusBadge isActive={(proxy.botsCount ?? 0) > 0} />
           <span className="text-[12px] text-secondary">
-            {proxy.botsCount} account{proxy.botsCount !== 1 ? "s" : ""}
+            {proxy.botsCount ?? 0} account{(proxy.botsCount ?? 0) !== 1 ? "s" : ""}
           </span>
         </div>
       </td>
@@ -138,7 +138,19 @@ export const ProxiesComponent: FC = () => {
     modals.show({
       label: "Add Proxy",
       component: (close) => (
-        <AddProxyComponent close={close} mutate={() => mutate()} />
+        <AddProxyComponent
+          close={close}
+          mutate={(newProxy?: Proxy | string) => {
+            if (newProxy && typeof newProxy === "object") {
+              mutate(
+                (prev) => [...(prev || []), { ...newProxy, botsCount: newProxy.botsCount ?? 0 }],
+                true,
+              );
+            } else {
+              mutate();
+            }
+          }}
+        />
       ),
     });
   }, [modals, mutate]);

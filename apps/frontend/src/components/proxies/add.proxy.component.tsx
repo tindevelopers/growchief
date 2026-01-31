@@ -1,5 +1,8 @@
 import { type FC, useCallback, useState } from "react";
-import { useProxiesRequest } from "@growchief/frontend/requests/proxies.request.ts";
+import {
+  useProxiesRequest,
+  type Proxy,
+} from "@growchief/frontend/requests/proxies.request.ts";
 import { useModals } from "@growchief/frontend/utils/store.ts";
 import { Select } from "@growchief/frontend/components/ui/select.tsx";
 import { Button } from "@growchief/frontend/components/ui/button.tsx";
@@ -35,7 +38,7 @@ const isValidIPOrDomain = (input: string): boolean => {
 
 const AddCustomProxy: FC<{
   close: () => void;
-  onSuccess?: (proxyId: string) => void;
+  onSuccess?: (proxy: Proxy) => void;
 }> = ({ close, onSuccess }) => {
   const proxiesRequest = useProxiesRequest();
   const { createCustomProxy } = proxiesRequest;
@@ -80,7 +83,7 @@ const AddCustomProxy: FC<{
       const result = await createCustomProxy(serverAddress, username, password);
       toaster.show("Custom proxy added successfully!", "success");
       if (onSuccess && result?.id) {
-        onSuccess(result.id);
+        onSuccess(result as Proxy);
       }
       close();
     } catch (error) {
@@ -196,7 +199,7 @@ const AddCustomProxy: FC<{
 const AddProxy: FC<{
   identifier: string;
   close: () => void;
-  onSuccess?: (proxyId: string) => void;
+  onSuccess?: (proxy: Proxy) => void;
 }> = ({ identifier, close, onSuccess }) => {
   const { data, isLoading } = useProxiesRequest().getCountries(identifier);
   const { createProxy } = useProxiesRequest();
@@ -210,12 +213,16 @@ const AddProxy: FC<{
       const result = await createProxy(identifier, country);
       toaster.show("Proxy created successfully!", "success");
       if (onSuccess && result?.id) {
-        onSuccess(result.id);
+        onSuccess(result as Proxy);
       }
       close();
-    } catch (error) {
-      close();
-      toaster.show("Failed to create proxy", "warning");
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to create proxy";
+      toaster.show(msg, "warning");
+      /* do not close - let user retry or fix */
     } finally {
       setLoading(false);
     }
@@ -260,7 +267,7 @@ const AddProxy: FC<{
 
 const CustomProxyCard: FC<{
   close: () => void;
-  mutate: (newProxyId?: string) => void;
+  mutate: (newProxy?: Proxy | string) => void;
 }> = ({ close, mutate }) => {
   const modals = useModals();
   const addCustomProxy = useCallback(() => {
@@ -272,8 +279,8 @@ const CustomProxyCard: FC<{
             closeInner();
             close();
           }}
-          onSuccess={(proxyId) => {
-            mutate(proxyId);
+          onSuccess={(proxy) => {
+            mutate(proxy);
           }}
         />
       ),
@@ -321,7 +328,7 @@ const CustomProxyCard: FC<{
 const ProxyCard: FC<{
   platform: ProxyData;
   close: () => void;
-  mutate: (newProxyId?: string) => void;
+  mutate: (newProxy?: Proxy | string) => void;
 }> = ({ platform, close, mutate }) => {
   const platformSrc = `/proxies/${platform.identifier.toLowerCase()}.png`;
   const modals = useModals();
@@ -335,8 +342,8 @@ const ProxyCard: FC<{
             closeInner();
             close();
           }}
-          onSuccess={(proxyId) => {
-            mutate(proxyId);
+          onSuccess={(proxy) => {
+            mutate(proxy);
           }}
         />
       ),
@@ -369,7 +376,7 @@ const ProxyCard: FC<{
 };
 export const AddProxyComponent: FC<{
   close: () => void;
-  mutate: (newProxyId?: string) => void;
+  mutate: (newProxy?: Proxy | string) => void;
 }> = ({ close, mutate }) => {
   const { data } = useProxiesRequest().getTypes();
   return (

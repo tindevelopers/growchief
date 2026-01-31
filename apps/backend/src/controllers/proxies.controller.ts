@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { GetOrganizationFromRequest } from '@growchief/backend/services/auth/org.from.request';
 import type { Organization } from '@prisma/client';
 import { ProxiesService } from '@growchief/shared-backend/database/proxies/proxies.service';
@@ -57,7 +65,17 @@ export class ProxiesController {
     @Param('identifier') identifier: string,
     @Body() body: CreateProxyDto,
   ) {
-    return this._proxiesManager.createProxy(identifier, org.id, body.country);
+    try {
+      return await this._proxiesManager.createProxy(
+        identifier,
+        org.id,
+        body.country,
+      );
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Failed to create proxy';
+      throw new BadRequestException(msg);
+    }
   }
 
   @Delete('/:identifier')
