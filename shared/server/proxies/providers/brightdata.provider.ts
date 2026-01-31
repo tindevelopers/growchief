@@ -37,7 +37,7 @@ async function brightDataFetch<T>(
     },
   });
 
-  if (res.status === 204) return undefined as { data: T };
+  if (res.status === 204) return undefined as unknown as { data: T };
 
   const text = await res.text();
   if (!res.ok) {
@@ -46,7 +46,7 @@ async function brightDataFetch<T>(
     throw new Error(msg);
   }
 
-  if (!text || text.trim() === '') return undefined as { data: T };
+  if (!text || text.trim() === '') return undefined as unknown as { data: T };
   try {
     return { data: JSON.parse(text) as T };
   } catch {
