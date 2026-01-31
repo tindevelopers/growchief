@@ -39,8 +39,7 @@ export class BillingController {
     @Body() body: { userId: string; todo: 'reset' | 'set' },
     @Res({ passthrough: true }) response: Response,
   ) {
-    response.cookie('viewas', body.todo === 'reset' ? '' : body.userId, {
-      domain: getUrlFromDomain(process.env.FRONTEND_URL!),
+    const viewasOpts: any = {
       expires: new Date(
         body.todo === 'set'
           ? Date.now() + 1000 * 60 * 60 * 24 * 365
@@ -49,7 +48,10 @@ export class BillingController {
       secure: true,
       httpOnly: true,
       sameSite: 'none',
-    });
+    };
+    const domain = getUrlFromDomain(process.env.FRONTEND_URL!);
+    if (domain) viewasOpts.domain = domain;
+    response.cookie('viewas', body.todo === 'reset' ? '' : body.userId, viewasOpts);
 
     return { change: true };
   }

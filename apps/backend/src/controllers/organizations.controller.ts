@@ -26,12 +26,10 @@ export class OrganizationsController {
     @Body('id') id: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    response.cookie('showorg', id, {
-      domain: getUrlFromDomain(process.env.FRONTEND_URL!),
-      secure: true,
-      httpOnly: true,
-      sameSite: 'none',
-    });
+    const cookieOpts: any = { secure: true, httpOnly: true, sameSite: 'none' };
+    const domain = getUrlFromDomain(process.env.FRONTEND_URL!);
+    if (domain) cookieOpts.domain = domain;
+    response.cookie('showorg', id, cookieOpts);
     return { change: true };
   }
 }

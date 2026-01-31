@@ -40,12 +40,14 @@ export class UsersController {
     );
 
     if (body.action === 'accept') {
-      response.cookie('showorg', invite.organizationId, {
-        domain: getUrlFromDomain(process.env.FRONTEND_URL!),
+      const cookieOpts: any = {
         secure: true,
         httpOnly: true,
         sameSite: 'none',
-      });
+      };
+      const domain = getUrlFromDomain(process.env.FRONTEND_URL!);
+      if (domain) cookieOpts.domain = domain;
+      response.cookie('showorg', invite.organizationId, cookieOpts);
     }
 
     return invite;
@@ -60,37 +62,40 @@ export class UsersController {
       users: UserOrganization[];
     },
   ) {
-    const roles = !org.subscription
-      ? undefined
-      : this.permissionList.list.reduce((all, current) => {
-          const permission = current.definitions.find(
-            (p) => p.identifier === org.subscription?.identifier,
-          );
+    const roles =
+      !org.subscription || !org.users?.[0]
+        ? undefined
+        : this.permissionList.list.reduce((all, current) => {
+            const permission = current.definitions.find(
+              (p) => p.identifier === org.subscription?.identifier,
+            );
 
-          return {
-            ...all,
-            [current.identifier]: {
-              enabled: !!(
-                permission?.enabled &&
-                current.level.indexOf(org.users[0].role) > -1
-              ),
-              total: permission?.total,
-            },
-          };
-        }, {});
+            return {
+              ...all,
+              [current.identifier]: {
+                enabled: !!(
+                  permission?.enabled &&
+                  current.level.indexOf(org.users[0].role) > -1
+                ),
+                total: permission?.total,
+              },
+            };
+          }, {});
 
     return { ...user, org, roles, selfhosted: !process.env.BILLING_PROVIDER };
   }
 
   @Post('/logout')
   logout(@Res({ passthrough: true }) response: Response) {
-    response.cookie('auth', '', {
-      domain: getUrlFromDomain(process.env.FRONTEND_URL!),
+    const opts: any = {
       expires: new Date(Date.now() - 10000),
       secure: true,
       httpOnly: true,
       sameSite: 'none',
-    });
+    };
+    const domain = getUrlFromDomain(process.env.FRONTEND_URL!);
+    if (domain) opts.domain = domain;
+    response.cookie('auth', '', opts);
 
     return { success: true };
   }

@@ -32,13 +32,24 @@ import { OnboardingComponent } from "@growchief/frontend/components/onboarding/o
 export const Layout: FC = () => {
   const fetch = useFetch();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { user, setUser } = useBearStore(
     useShallow((state) => ({ user: state.user, setUser: state.setUser })),
   );
 
   const loadUser = useCallback(async () => {
-    const data = await (await fetch("/users/self")).json();
-    setUser({ ...data, mutate: () => loadUser() });
+    setLoadError(null);
+    try {
+      const res = await fetch("/users/self");
+      if (!res.ok) {
+        if (res.status === 401) return;
+        throw new Error(`Failed to load: ${res.status}`);
+      }
+      const data = await res.json();
+      setUser({ ...data, mutate: () => loadUser() });
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Failed to load user");
+    }
   }, []);
 
   const memoRoutes = useMemo(() => {
@@ -58,13 +69,36 @@ export const Layout: FC = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user && !loadError) {
       loadUser();
     }
   }, []);
 
+  if (loadError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-4 p-8">
+          <p className="text-secondary">{loadError}</p>
+          <button
+            onClick={() => {
+              setLoadError(null);
+              loadUser();
+            }}
+            className="px-4 py-2 rounded bg-[#FD7302] text-white hover:opacity-90"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-pulse text-secondary">Loading...</div>
+      </div>
+    );
   }
 
   if (!user.org.subscription && !user.selfhosted) {

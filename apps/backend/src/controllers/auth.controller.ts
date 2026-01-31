@@ -17,6 +17,18 @@ import { ForgotPasswordDto } from '@growchief/shared-both/dto/auth/forgot.passwo
 import { ForgotReturnPasswordDto } from '@growchief/shared-both/dto/auth/forgot-return.password.dto';
 import { getUrlFromDomain } from '@growchief/shared-both/utils/get.url.from.domain';
 
+function authCookieOptions() {
+  const opts: any = {
+    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+    secure: true,
+    httpOnly: true,
+    sameSite: 'none',
+  };
+  const domain = getUrlFromDomain(process.env.FRONTEND_URL!);
+  if (domain) opts.domain = domain;
+  return opts;
+}
+
 @Controller('/auth')
 export class AuthController {
   constructor(
@@ -60,13 +72,7 @@ export class AuthController {
         return;
       }
 
-      response.cookie('auth', jwt, {
-        domain: getUrlFromDomain(process.env.FRONTEND_URL!),
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
-        secure: true,
-        httpOnly: true,
-        sameSite: 'none',
-      });
+      response.cookie('auth', jwt, authCookieOptions());
 
       response.header('onboarding', 'true');
       response.header('logged', 'true');
@@ -96,13 +102,7 @@ export class AuthController {
         getOrgFromCookie,
       );
 
-      response.cookie('auth', jwt, {
-        domain: getUrlFromDomain(process.env.FRONTEND_URL!),
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
-        secure: true,
-        httpOnly: true,
-        sameSite: 'none',
-      });
+      response.cookie('auth', jwt, authCookieOptions());
 
       response.header('logged', 'true');
       response.status(200).json({
@@ -150,13 +150,7 @@ export class AuthController {
       return response.status(200).send({ can: false });
     }
 
-    response.cookie('auth', activate, {
-      domain: getUrlFromDomain(process.env.FRONTEND_URL!),
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
-      secure: true,
-      httpOnly: true,
-      sameSite: 'none',
-    });
+    response.cookie('auth', activate, authCookieOptions());
 
     response.header('onboarding', 'true');
     response.header('logged', 'true');
@@ -179,13 +173,7 @@ export class AuthController {
       return response.json({ token });
     }
 
-    response.cookie('auth', jwt, {
-      domain: getUrlFromDomain(process.env.FRONTEND_URL!),
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
-      secure: true,
-      httpOnly: true,
-      sameSite: 'none',
-    });
+    response.cookie('auth', jwt, authCookieOptions());
 
     response.header('reload', 'true');
     response.header('logged', 'true');
