@@ -36,7 +36,9 @@ async function bootstrap() {
   app.useBodyParser('json', { limit: '20mb' });
   app.useGlobalFilters(new PermissionExceptionFilter());
 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log('listening on port', process.env.PORT ?? 3000);
+  // PORT is for nginx (Railway/Cloud Run). Backend listens on BACKEND_PORT (nginx proxies /api/ here).
+  const port = process.env.BACKEND_PORT ?? 3000;
+  await app.listen(port);
+  console.log('listening on port', port);
 }
 bootstrap();
