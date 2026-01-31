@@ -438,10 +438,11 @@ export const AnalyticsComponent: FC = () => {
   };
 
   const values: any = useMemo(() => {
-    if (!chartData) {
+    if (!chartData || typeof chartData !== "object" || Array.isArray(chartData)) {
       return {};
     }
-    return Object.entries(chartData).reduce(
+    try {
+      return Object.entries(chartData).reduce(
       (all, [key, value]: [key: string, value: any]) => {
         const chunkIt = chunk<any>(value, Math.ceil(value.length / 7));
         const items = chunkIt.map((currentChunk) => ({
@@ -459,8 +460,11 @@ export const AnalyticsComponent: FC = () => {
           },
         };
       },
-      {}
+      {} as Record<string, any>
     );
+    } catch {
+      return {};
+    }
   }, [chartData]);
 
   return (

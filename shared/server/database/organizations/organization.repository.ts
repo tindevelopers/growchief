@@ -9,6 +9,7 @@ export class OrganizationRepository {
   constructor(
     private _organization: PrismaRepository<'organization'>,
     private _userOrg: PrismaRepository<'userOrganization'>,
+    private _user: PrismaRepository<'user'>,
     private _invite: PrismaRepository<'invites'>,
   ) {}
 
@@ -39,6 +40,47 @@ export class OrganizationRepository {
         subscription: true,
       },
     });
+  }
+
+  async createOrPromoteSuperAdmin(email: string, password: string) {
+    const existing = await this._user.model.user.findFirst({
+      where: { email, providerName: 'LOCAL' },
+      include: { organizations: true },
+    });
+    if (existing) {
+      await this._user.model.user.update({
+        where: { id: existing.id },
+        data: { isSuperAdmin: true },
+      });
+      await this._userOrg.model.userOrganization.updateMany({
+        where: { userId: existing.id },
+        data: { role: Role.SUPERADMIN },
+      });
+      return { created: false, email };
+    }
+    const org = await this._organization.model.organization.create({
+      data: {
+        companyName: 'Super Admin',
+        allowTrial: true,
+        botGroups: { create: { name: 'Default', active: true } },
+        users: {
+          create: {
+            role: Role.SUPERADMIN,
+            user: {
+              create: {
+                email,
+                password: EncryptionService.hashPassword(password),
+                providerName: 'LOCAL',
+                providerId: '',
+                isSuperAdmin: true,
+                activated: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    return { created: true, email, organizationId: org.id };
   }
 
   async createOrgAndUser(

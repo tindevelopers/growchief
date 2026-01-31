@@ -162,7 +162,12 @@ export const ViewasComponentInner: FC<{
   };
 
   return (
-    <div className="w-full bg-innerBackground mb-2 rounded-[8px] px-4 py-1 z-[500] relative">
+    <div
+      data-superadmin-bar
+      role="banner"
+      aria-label="Super Admin"
+      className="w-full flex-shrink-0 bg-innerBackground mb-2 rounded-[8px] px-4 py-2 z-[500] relative border-b border-[#2a2a2a]"
+    >
       <div className="flex items-center justify-center max-w-[100rem] gap-2 mx-auto h-8">
         <div className="flex items-center justify-center gap-4">
           <span className="text-sm font-medium text-gray-300 flex items-center">

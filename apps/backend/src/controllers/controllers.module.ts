@@ -16,6 +16,7 @@ import { AnalyticsController } from '@growchief/backend/controllers/analytics.co
 import { LeadsController } from '@growchief/backend/controllers/leads.controller';
 import { ProxiesController } from '@growchief/backend/controllers/proxies.controller';
 import { PlugsController } from '@growchief/backend/controllers/plugs.controller';
+import { AdminController } from '@growchief/backend/controllers/admin.controller';
 
 const authControllers = [
   UsersController,
@@ -37,6 +38,7 @@ const authControllers = [
     AuthController,
     RootController,
     WebhookController,
+    AdminController,
     ...authControllers,
   ],
   providers: [

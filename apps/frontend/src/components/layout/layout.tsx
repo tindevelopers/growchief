@@ -46,7 +46,15 @@ export const Layout: FC = () => {
         throw new Error(`Failed to load: ${res.status}`);
       }
       const data = await res.json();
-      setUser({ ...data, mutate: () => loadUser() });
+      const isSuperAdmin = Boolean(data?.isSuperAdmin);
+      if (import.meta.env.DEV) {
+        console.log("[Layout] /users/self loaded", {
+          email: data?.email,
+          isSuperAdmin,
+          hasOrg: !!data?.org,
+        });
+      }
+      setUser({ ...data, isSuperAdmin, mutate: () => loadUser() });
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Failed to load user");
     }
@@ -96,16 +104,36 @@ export const Layout: FC = () => {
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="animate-pulse text-secondary">Loading...</div>
+        <div className="animate-pulse text-primary">Loading...</div>
       </div>
     );
   }
+
+  if (!user.org) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-4 p-8">
+          <p className="text-primary">Invalid session. Please log in again.</p>
+          <button
+            onClick={() => {
+              window.location.href = "/auth/login";
+            }}
+            className="px-4 py-2 rounded bg-[#FD7302] text-white hover:opacity-90"
+          >
+            Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const showSuperAdminBar = Boolean(user?.isSuperAdmin);
 
   if (!user.org.subscription && !user.selfhosted) {
     return (
       <ModalManager>
         <div className="flex flex-1 flex-col">
-          {user.isSuperAdmin && <SuperAdminComponent />}
+          {showSuperAdminBar && <SuperAdminComponent />}
           <CheckSubscription />
           <div className="blurMe flex flex-1 flex-col px-4 sm:px-6 lg:px-8">
             <JoinTeamModal />
@@ -126,7 +154,7 @@ export const Layout: FC = () => {
 
   return (
     <div className="flex flex-1 flex-col">
-      {user.isSuperAdmin && <SuperAdminComponent />}
+      {showSuperAdminBar && <SuperAdminComponent />}
       <JoinTeamModal />
       <div className="flex gap-[8px] flex-1 relative">
         {/* Mobile Overlay */}
@@ -153,7 +181,7 @@ export const Layout: FC = () => {
           <div
             className={clsx(
               "lg:fixed lg:left-[17px] lg:top-0 blurMe h-full pt-[32px] pb-[15px] px-[8px] flex flex-col gap-[32px]",
-              user.isSuperAdmin && "pt-[85px]",
+              showSuperAdminBar && "pt-[85px]",
             )}
           >
             {/* Mobile close button */}

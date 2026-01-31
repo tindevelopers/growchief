@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import type {
   Organization,
   Subscription,
@@ -15,6 +24,8 @@ import { getUrlFromDomain } from '@growchief/shared-both/utils/get.url.from.doma
 
 @Controller('/users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(
     public permissionList: PermissionList,
     private _userService: UsersService,
@@ -62,6 +73,15 @@ export class UsersController {
       users: UserOrganization[];
     },
   ) {
+    const freshUser = await this._userService.getUserById(user.id);
+    const isSuperAdmin = freshUser?.isSuperAdmin ?? user.isSuperAdmin ?? false;
+
+    if (freshUser && freshUser.isSuperAdmin !== user.isSuperAdmin) {
+      this.logger.log(
+        `isSuperAdmin sync: userId=${user.id} email=${user.email} jwt=${user.isSuperAdmin} db=${freshUser.isSuperAdmin} -> using db`,
+      );
+    }
+
     const roles =
       !org.subscription || !org.users?.[0]
         ? undefined
@@ -82,7 +102,13 @@ export class UsersController {
             };
           }, {});
 
-    return { ...user, org, roles, selfhosted: !process.env.BILLING_PROVIDER };
+    return {
+      ...user,
+      isSuperAdmin,
+      org,
+      roles,
+      selfhosted: !process.env.BILLING_PROVIDER,
+    };
   }
 
   @Post('/logout')

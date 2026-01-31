@@ -75,4 +75,8 @@ export class OrganizationService {
   getOrgByApiKey(apiKey: string) {
     return this._organizationRepository.getOrgByApiKey(apiKey);
   }
+
+  createOrPromoteSuperAdmin(email: string, password: string) {
+    return this._organizationRepository.createOrPromoteSuperAdmin(email, password);
+  }
 }

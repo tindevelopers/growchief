@@ -7,6 +7,10 @@ import { AcceptOrDeclineInviteDto } from '@growchief/shared-both/dto/team/accept
 export class UsersService {
   constructor(private _usersRepository: UsersRepository) {}
 
+  getUserById(id: string) {
+    return this._usersRepository.getUserById(id);
+  }
+
   getUserByEmail(email: string) {
     return this._usersRepository.getUserByEmail(email);
   }
