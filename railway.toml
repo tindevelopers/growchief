@@ -3,7 +3,8 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile.dev"
 
 [deploy]
-healthcheckPath = "/"
+# Use /api/ so healthcheck hits backend - prevents routing traffic until backend is ready
+healthcheckPath = "/api/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
