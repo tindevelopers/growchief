@@ -258,20 +258,106 @@ export class LinkedinProvider extends BotAbstract {
       await page.waitForSelector(usernameSelector, { timeout: 15000 });
       cursor.startMouse();
 
-      return new Promise<{ picture: string; name: string; id: string } | false>(
-        async (resolve) => {
-          try {
-            page.on('response', async (response) => {
-              if (response.url().match(/34ead06db82a2cc9a778fac97f69ad6a/gm)) {
-                const json = await response.json();
-                return resolve(extractMyProfile(json));
+      return Promise.race<{ picture: string; name: string; id: string } | false>([
+        // 1) Listen for API response with profile
+        new Promise<{ picture: string; name: string; id: string } | false>(
+          (resolve) => {
+            const handler = async (response: any) => {
+              try {
+                const url = response.url();
+                const matchesProfile =
+                  /34ead06db82a2cc9a778fac97f69ad6a/gm.test(url) ||
+                  (/voyager.*(profile|identity|me)/i.test(url) &&
+                    url.includes('linkedin.com'));
+                if (matchesProfile) {
+                  const json = await response.json();
+                  const result = extractMyProfile(json);
+                  if (result) {
+                    page.off('response', handler);
+                    resolve(result);
+                  }
+                }
+              } catch {
+                /* ignore */
               }
+            };
+            page.on('response', handler);
+          },
+        ),
+        // 2) Fallback: detect feed page and extract profile from DOM
+        (async () => {
+          try {
+            await page.waitForURL(
+              (url) =>
+                url.pathname === '/' ||
+                url.pathname === '/feed' ||
+                url.pathname.startsWith('/feed/'),
+              { timeout: 120000 },
+            );
+            await timer(3000);
+
+            const profile = await page.evaluate(() => {
+              // Left rail: current user card (miniProfile) or first profile link in aside
+              const profileLink =
+                document.querySelector<HTMLAnchorElement>(
+                  'a[href*="/in/"][href*="miniProfile"]',
+                ) ||
+                document.querySelector<HTMLAnchorElement>(
+                  'aside a[href*="/in/"], [role="complementary"] a[href*="/in/"]',
+                );
+              if (profileLink) {
+                const href = profileLink.getAttribute('href') || '';
+                const match = href.match(/linkedin\.com\/in\/([^/?]+)/);
+                const id = match ? match[1] : '';
+                const img = profileLink.querySelector('img');
+                const picture = img?.src || '';
+                const nameEl =
+                  profileLink.querySelector('[dir="ltr"]') ||
+                  profileLink.closest('div')?.querySelector('span[aria-hidden]');
+                const name =
+                  (nameEl?.textContent?.trim() ||
+                    profileLink.getAttribute('aria-label') ||
+                    '') as string;
+                if (id || name || picture) {
+                  return { id: id || 'unknown', name: name || 'User', picture };
+                }
+              }
+              const meButton = document.querySelector(
+                '[data-control-name="identity_welcome_message"], [data-test-id="global-nav__me"]',
+              );
+              if (meButton) {
+                const img = meButton.querySelector('img');
+                const link =
+                  meButton.closest('a') ||
+                  meButton.querySelector('a[href*="/in/"]');
+                const href = (link as HTMLAnchorElement)?.getAttribute?.(
+                  'href',
+                ) || '';
+                const match = href.match(/\/in\/([^/?]+)/);
+                return {
+                  id: match ? match[1] : 'unknown',
+                  name: ((meButton as HTMLElement).getAttribute?.(
+                    'aria-label',
+                  ) || 'User').replace(/^Profile for /i, ''),
+                  picture: (img as HTMLImageElement)?.src || '',
+                };
+              }
+              return null;
             });
-          } catch (err) {
-            resolve(false);
+
+            if (profile?.id || profile?.name) {
+              return {
+                id: profile!.id,
+                name: profile!.name,
+                picture: profile!.picture || '',
+              };
+            }
+          } catch {
+            /* timeout or error */
           }
-        },
-      );
+          return false;
+        })(),
+      ]);
     } catch (err) {
       console.log(err);
       return false;
