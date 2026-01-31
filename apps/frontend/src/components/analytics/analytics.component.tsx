@@ -377,17 +377,10 @@ export const AnalyticsComponent: FC = () => {
   const { data: chartData, isLoading } = useSWR(
     swrKey,
     async () => {
-      return (
-        await fetch(
-          `/analytics?type=${viewType}&startDate=${dateRange.start.toISOString().split("T")[0]}&endDate=${dateRange.end.toISOString().split("T")[0]}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        )
-      ).json();
+      const res = await fetch(
+        `/analytics?type=${viewType}&startDate=${dateRange.start.toISOString().split("T")[0]}&endDate=${dateRange.end.toISOString().split("T")[0]}`
+      );
+      return res.json();
     },
     {
       revalidateOnFocus: false,
