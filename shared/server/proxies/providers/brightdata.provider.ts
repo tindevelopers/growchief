@@ -71,14 +71,24 @@ export class BrightDataProvider
   }
 
   async countryList(): Promise<{ identifier: string; label: string }[]> {
-    const data = (await brightData.get<any>('/countrieslist')).data;
-    return sortBy(
-      data.zone_type.ISP_dedicated_ip.country_codes.map((p: any) => ({
-        identifier: p,
-        label: getName(p),
-      })),
-      (p) => p.label,
-    );
+    try {
+      const res = await brightData.get<any>('/countrieslist');
+      const data = res?.data;
+      const codes =
+        data?.zone_type?.ISP_dedicated_ip?.country_codes ??
+        data?.zone_type?.residential?.country_codes ??
+        [];
+      if (!Array.isArray(codes)) return [];
+      return sortBy(
+        codes.map((p: string) => ({
+          identifier: p,
+          label: getName(p) || p,
+        })),
+        (p) => p.label,
+      );
+    } catch (err) {
+      return [];
+    }
   }
 
   private async _createZone(country: string, randomId: string) {

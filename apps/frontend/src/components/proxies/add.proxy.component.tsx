@@ -225,19 +225,32 @@ const AddProxy: FC<{
     return <LoadingComponent />;
   }
 
+  const countries = Array.isArray(data) ? data : [];
+  const hasCountries = countries.length > 0;
+
   return (
     <div className="min-h-[300px]">
       <div className="text-[14px]">Select Proxy Country</div>
       <div className="py-[8px]">
         <Select onChange={(e) => setCountry(e.target.value)}>
           <option value="">-- Select --</option>
-          {data?.map((p) => (
-            <option value={p.identifier}>{p.label}</option>
+          {countries.map((p) => (
+            <option key={p.identifier} value={p.identifier}>
+              {p.label}
+            </option>
           ))}
         </Select>
       </div>
+      {!hasCountries && !isLoading && (
+        <p className="text-[12px] text-amber-500 mt-2">
+          No countries available. Check that BRIGHTDATA_API_KEY is set.
+        </p>
+      )}
       <div className="mt-[8px]">
-        <Button disabled={!country} onClick={createProxyFunction}>
+        <Button
+          disabled={!country || !hasCountries}
+          onClick={createProxyFunction}
+        >
           Add Proxy
         </Button>
       </div>
@@ -371,7 +384,7 @@ export const AddProxyComponent: FC<{
       </div>
       <div className="flex flex-wrap gap-[12px]">
         <CustomProxyCard close={close} mutate={mutate} />
-        {data?.map((p) => (
+        {(Array.isArray(data) ? data : []).map((p) => (
           <ProxyCard
             key={p.identifier}
             platform={p}

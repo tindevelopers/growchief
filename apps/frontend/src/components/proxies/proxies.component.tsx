@@ -181,7 +181,7 @@ export const ProxiesComponent: FC = () => {
     );
   }
 
-  if (!proxies || proxies.length === 0) {
+  if (!Array.isArray(proxies) || proxies.length === 0) {
     return (
       <div className="bg-innerBackground rounded-[8px] overflow-hidden px-[20px] pt-[20px]">
         <div className="px-[20px] py-[40px] text-center">
@@ -202,7 +202,7 @@ export const ProxiesComponent: FC = () => {
 
   return (
     <div className="bg-innerBackground rounded-[8px] overflow-hidden ">
-      {proxies && proxies.length > 0 && (
+      {Array.isArray(proxies) && proxies.length > 0 && (
         <div className="border-b border-background px-[20px] pt-[20px]">
           <div className="flex items-center justify-end mb-[20px]">
             <Button
@@ -237,13 +237,13 @@ export const ProxiesComponent: FC = () => {
           </tr>
         </thead>
         <tbody>
-          {proxies?.map((proxy) => (
+          {(Array.isArray(proxies) ? proxies : []).map((proxy) => (
             <ProxyRow key={proxy.id} proxy={proxy} onDelete={deleteProxy} />
           ))}
         </tbody>
       </table>
 
-      {proxies.length > 0 && (
+      {Array.isArray(proxies) && proxies.length > 0 && (
         <div className="py-[16px] border-t border-background px-[20px]">
           <div className="text-[13px] text-secondary">
             Total: {proxies.length} prox{proxies.length !== 1 ? "ies" : "y"}

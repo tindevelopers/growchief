@@ -246,15 +246,16 @@ export class LinkedinProvider extends BotAbstract {
   }): Promise<{ picture: string; name: string; id: string } | false> {
     const { page, cursor } = params;
     try {
-      await page.goto('https://www.linkedin.com');
-      await page
-        .locator("//a[contains(text(), 'Sign in with email')]")
-        .waitFor();
-      await timer(5000);
-      await cursor.click("//a[contains(text(), 'Sign in with email')]");
-      await timer(5000);
+      // Go directly to login page - LinkedIn UI changed; email form is shown directly
+      await page.goto('https://www.linkedin.com/login', {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000,
+      });
+      await timer(3000);
 
-      await page.waitForSelector('#username');
+      // Wait for email/username field (LinkedIn uses #username or [name="session_key"])
+      const usernameSelector = '#username, input[name="session_key"], input[type="email"]';
+      await page.waitForSelector(usernameSelector, { timeout: 15000 });
       cursor.startMouse();
 
       return new Promise<{ picture: string; name: string; id: string } | false>(
