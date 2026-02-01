@@ -20,6 +20,8 @@ import { AnalyticsIcon } from "@growchief/frontend/components/icons/analytics.ic
 import { AnalyticsPage } from "@growchief/frontend/pages/analytics.page.tsx";
 import { PlugsPage } from "@growchief/frontend/pages/plugs.page.tsx";
 import { PlugsIcon } from "@growchief/frontend/components/icons/plugs.icon.tsx";
+import { AdminPage } from "@growchief/frontend/pages/admin.page.tsx";
+import { AdminIcon } from "@growchief/frontend/components/icons/admin.icon.tsx";
 
 export type OneRoute = RouteProps & {
   label: string;
@@ -78,6 +80,17 @@ export const topRoutes: (user: User) => RoutesType = (_: User) => [
 ];
 
 export const bottomRoutes: (user: User) => RoutesType = (user: User) => [
+  ...(user?.isSuperAdmin
+    ? [
+        {
+          label: "Admin",
+          path: "/admin",
+          menu: true,
+          element: <AdminPage />,
+          icon: <AdminIcon />,
+        },
+      ]
+    : []),
   ...(["ADMIN", "SUPERADMIN"].indexOf(user?.org?.users?.[0]?.role) > -1 &&
   !user.selfhosted
     ? [

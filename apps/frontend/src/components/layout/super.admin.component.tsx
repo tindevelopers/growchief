@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, type FC } from "react";
+import { Link } from "react-router";
 import useSWR from "swr";
 import { debounce } from "lodash";
 import { useUser } from "@growchief/frontend/utils/store";
@@ -46,8 +47,10 @@ export const SuperAdminComponent = () => {
 export const ViewasComponentInner: FC<{
   viewingAs: string;
   subscription: any;
+  /** When true, renders without bar styling for embedding in Admin page */
+  embedded?: boolean;
 }> = (props) => {
-  const { viewingAs, subscription } = props;
+  const { viewingAs, subscription, embedded } = props;
   const [current, setCurrent] = useState("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
@@ -166,10 +169,27 @@ export const ViewasComponentInner: FC<{
       data-superadmin-bar
       role="banner"
       aria-label="Super Admin"
-      className="w-full flex-shrink-0 bg-innerBackground mb-2 rounded-[8px] px-4 py-2 z-[500] relative border-b border-[#2a2a2a]"
+      className={
+        embedded
+          ? "w-full"
+          : "w-full flex-shrink-0 bg-innerBackground mb-2 rounded-[8px] px-4 py-2 z-[500] relative border-b border-[#2a2a2a]"
+      }
     >
-      <div className="flex items-center justify-center max-w-[100rem] gap-2 mx-auto h-8">
+      <div
+        className={
+          embedded
+            ? "flex flex-wrap items-center gap-4 py-2"
+            : "flex items-center justify-center max-w-[100rem] gap-2 mx-auto h-8"
+        }
+      >
         <div className="flex items-center justify-center gap-4">
+          <Link
+            to="/admin"
+            className="text-xs font-semibold px-2 py-0.5 rounded bg-[#FD7302]/20 text-[#FD7302] hover:bg-[#FD7302]/30 transition-colors"
+            title="Open Admin panel"
+          >
+            Super Admin
+          </Link>
           <span className="text-sm font-medium text-gray-300 flex items-center">
             {viewingAs ? "Viewing as:" : "View as:"}
           </span>
@@ -178,7 +198,7 @@ export const ViewasComponentInner: FC<{
             <div className="relative" ref={dropdownRef}>
               <Input
                 className="w-60 !h-[30px] pl-8 border-[#2a2a2a] bg-[#1f1f1f] text-gray-200 text-sm"
-                placeholder="Search users..."
+                placeholder="Search by email (min 2 chars)..."
                 {...(current ? { value: current } : {})}
                 onChange={(e) => debouncedSearch(e.target.value)}
                 onFocus={() => searchTerm.length > 0 && setIsDropdownOpen(true)}
@@ -214,7 +234,9 @@ export const ViewasComponentInner: FC<{
                         ))
                       ) : (
                         <div className="px-3 py-2 text-gray-400 text-sm">
-                          No users found
+                          {searchTerm.length < 2
+                            ? "Type at least 2 characters to search"
+                            : "No users found"}
                         </div>
                       )}
                     </>

@@ -154,16 +154,22 @@ export class UsersRepository {
   }
 
   getAllUsers(search: string) {
+    // Require at least 2 characters to avoid returning too many results
+    if (!search || typeof search !== 'string' || search.trim().length < 2) {
+      return Promise.resolve([]);
+    }
+    const term = search.trim();
     return this._userOrganization.model.userOrganization.findMany({
+      take: 50,
       where: {
         OR: [
-          { id: { contains: search, mode: 'insensitive' } },
+          { id: { contains: term, mode: 'insensitive' } },
           {
             user: {
               OR: [
-                { id: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { name: { contains: search, mode: 'insensitive' } },
+                { id: { contains: term, mode: 'insensitive' } },
+                { email: { contains: term, mode: 'insensitive' } },
+                { name: { contains: term, mode: 'insensitive' } },
               ],
             },
           },
