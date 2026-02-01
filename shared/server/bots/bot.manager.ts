@@ -651,8 +651,15 @@ export class BotManager extends BotTools {
       ]);
     } catch (err) {}
 
+    const safeEmit = (value: string) => {
+      try {
+        if (isObservable && screenshots$) screenshots$.next(value);
+      } catch {
+        /* Subject may be unsubscribed if client disconnected */
+      }
+    };
     if (race === false && isObservable) {
-      screenshots$.next('logout');
+      safeEmit('logout');
     }
 
     try {
@@ -670,7 +677,7 @@ export class BotManager extends BotTools {
     } catch (err) {}
 
     if (functionName === 'screenShare') {
-      if (isObservable) screenshots$.next('stop');
+      safeEmit('stop');
       await this._unsubscribeAll(
         cursor,
         screenshots$,
@@ -687,7 +694,7 @@ export class BotManager extends BotTools {
     }
 
     if (race === 'proxy') {
-      if (isObservable) screenshots$.next('stop');
+      safeEmit('stop');
       await this._unsubscribeAll(
         cursor,
         screenshots$,
@@ -704,7 +711,7 @@ export class BotManager extends BotTools {
     }
 
     if (typeof race === 'object' && !Array.isArray(race) && 'type' in race) {
-      if (isObservable) screenshots$.next('stop');
+      safeEmit('stop');
       await this._unsubscribeAll(
         cursor,
         screenshots$,
@@ -721,17 +728,18 @@ export class BotManager extends BotTools {
     }
 
     // Save account BEFORE notifying frontend - otherwise frontend refetches before DB is updated
+    const profile = typeof race === 'object' && !Array.isArray(race) ? race : null;
+    const name = (profile as any)?.name?.trim() || 'User';
+    const picture = (profile as any)?.picture || '';
+    const rawId = (profile as any)?.id?.trim();
+    const internalId = rawId || `unknown-${makeId(12)}`;
     await this._botService.saveStorageAndActions(
       functionName,
       organizationId,
       platform,
-      typeof race === 'object' && !Array.isArray(race)
-        ? (race as any)?.name
-        : '',
-      typeof race === 'object' && !Array.isArray(race)
-        ? (race as any)?.picture
-        : '',
-      typeof race === 'object' && !Array.isArray(race) ? (race as any)?.id : '',
+      name,
+      picture,
+      internalId,
       groupId,
       bot,
       state,
@@ -740,7 +748,7 @@ export class BotManager extends BotTools {
       proxyId,
     );
 
-    if (isObservable) screenshots$.next('stop');
+    safeEmit('stop');
     await this._unsubscribeAll(
       cursor,
       screenshots$,
