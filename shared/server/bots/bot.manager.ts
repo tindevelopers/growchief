@@ -659,46 +659,26 @@ export class BotManager extends BotTools {
       await browser.tracing.stop();
     } catch (err) {}
 
-    /**
-     * Close everything after we finished
-     */
-    // if we are streaming a picture, let's end it
-    if (isObservable) {
-      try {
-        screenshots$.next('stop');
-      } catch (err) {}
-    }
-
     try {
-      // close the page, it might got killed by the killEverything$, so let's add it in try and catch
       await page.close();
     } catch (err) {}
 
-    // we need to unsubscribe from everything, because it will sit in the memory
-    // If for some reason it's already been unsubscribed, let's not crash the job
-    await this._unsubscribeAll(
-      cursor,
-      screenshots$,
-      killEverything$,
-      clickScreen$,
-      saveLog$,
-      client,
-    );
+    const state = await browser.storageState({});
 
-    /**
-     * Closing the browser and saving the state
-     */
-    // save the state so we can use it next time
-    const state = await browser.storageState({
-      // indexedDB: true,
-    });
-
-    // maybe for some reason the browser is already closed, let's just wrap it in try and catch
     try {
       await browser.close();
     } catch (err) {}
 
     if (functionName === 'screenShare') {
+      if (isObservable) screenshots$.next('stop');
+      await this._unsubscribeAll(
+        cursor,
+        screenshots$,
+        killEverything$,
+        clickScreen$,
+        saveLog$,
+        client,
+      );
       return {
         delay: 0,
         endWorkflow: false,
@@ -706,8 +686,16 @@ export class BotManager extends BotTools {
       };
     }
 
-    // The proxy is not working, better to try the same request again we don't want to save the new state
     if (race === 'proxy') {
+      if (isObservable) screenshots$.next('stop');
+      await this._unsubscribeAll(
+        cursor,
+        screenshots$,
+        killEverything$,
+        clickScreen$,
+        saveLog$,
+        client,
+      );
       return {
         delay: 1_800_000,
         endWorkflow: false,
@@ -715,9 +703,16 @@ export class BotManager extends BotTools {
       };
     }
 
-    // there is something wrong in the automation, we need to know about it.
     if (typeof race === 'object' && !Array.isArray(race) && 'type' in race) {
-      // something went wrong in the automation
+      if (isObservable) screenshots$.next('stop');
+      await this._unsubscribeAll(
+        cursor,
+        screenshots$,
+        killEverything$,
+        clickScreen$,
+        saveLog$,
+        client,
+      );
       return {
         delay: 0,
         endWorkflow: false,
@@ -725,7 +720,7 @@ export class BotManager extends BotTools {
       };
     }
 
-    // saving the login
+    // Save account BEFORE notifying frontend - otherwise frontend refetches before DB is updated
     await this._botService.saveStorageAndActions(
       functionName,
       organizationId,
@@ -743,6 +738,16 @@ export class BotManager extends BotTools {
       race !== 'logout' && race !== false,
       timezone || 0,
       proxyId,
+    );
+
+    if (isObservable) screenshots$.next('stop');
+    await this._unsubscribeAll(
+      cursor,
+      screenshots$,
+      killEverything$,
+      clickScreen$,
+      saveLog$,
+      client,
     );
 
     // if we are logged out, and we shouldn't skip the queue, let's re-login
